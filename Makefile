@@ -10,5 +10,7 @@ all: pam_twofactor.so
 clean:
 	rm -rf *.so *.o
 
+pam_twofactor.so: pam_twofactor.o
+
 %.so: %.o
 	$(LINK.o) $^ $(LOADLIBES) $(LDLIBS) -o $@

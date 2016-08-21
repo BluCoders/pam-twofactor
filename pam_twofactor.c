@@ -1,6 +1,10 @@
 #define PAM_SM_AUTH
 
+#include <string.h>
+#include <stdbool.h>
+#include <syslog.h>
 #include <security/pam_modules.h>
+#include <security/pam_ext.h>
 
 // How to complain: use pam_syslog(..)
 
@@ -27,9 +31,31 @@
 //       But we can change the module name to pam_twofactor!
 //       why no acronyms: Short enough name that we can avoid the vagueness of acronyms
 
+typedef struct options_t {
+	bool use_first_pass;
+} options;
+options get_options(pam_handle_t *pamh, int argc, const char **argv) {
+	options ret;
+	// Defaults
+	ret.use_first_pass = false;
+
+	int i;
+	for(i=0; i<argc; i++) {
+		const char *arg = argv[i];
+		if(!strcmp(arg, "use_first_pass"))
+			ret.use_first_pass = true;
+		else
+			pam_syslog(pamh, LOG_INFO, "pam-twofactor: Unknown argument %s", arg);
+	}
+	return ret;
+}
+
 // Valid flags (any combination): PAM_SILENT                - Do not emit any messages.
 //  				  PAM_DISALLOW_NULL_AUTHTOK - Return PAM_AUTH_ERR if the database has NULL for this user. Without this flag, NULL will lead to a success.
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv) {
+	options opt = get_options(pamh, argc, argv);
+	pam_syslog(pamh, LOG_INFO, "Hi. %02x flags", flags);
+	pam_syslog(pamh, LOG_INFO, "use first pass? %i", opt.use_first_pass);
 
 	/* return values:
 	 * PAM_AUTH_ERR          - Authentication failure.
